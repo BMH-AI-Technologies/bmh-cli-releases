@@ -40,6 +40,15 @@ for rc in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_profile"; do
 done
 
 echo "✓ Đã cài bmh vào $BIN_DIR"
+
+# The PATH line above only reaches NEW terminals. So that `bmh` works right away in this
+# window too, link it into a writable folder that's already on this shell's PATH.
+NOW=""
+for d in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin" "$HOME/bin"; do
+  case ":$PATH:" in
+    *":$d:"*) if [ -d "$d" ] && [ -w "$d" ] && ln -sf "$BIN_DIR/bmh" "$d/bmh" 2>/dev/null; then NOW="$d"; break; fi ;;
+  esac
+done
 # The pipe from curl occupies stdin; setup's questions need the keyboard.
 if (exec </dev/tty) 2>/dev/null; then
   # BMH_INVITE (optional) registers the laptop with the BMH server.
@@ -48,4 +57,8 @@ else
   echo "Chạy tiếp: bmh setup${BMH_ORG:+ --org $BMH_ORG}"
 fi
 echo
-echo "Mở cửa sổ Terminal mới (hoặc terminal trong Antigravity), vào thư mục làm việc rồi gõ: bmh"
+if [ -n "$NOW" ]; then
+  echo "Vào thư mục làm việc rồi gõ: bmh"
+else
+  echo "Mở cửa sổ Terminal mới (hoặc terminal trong Antigravity), vào thư mục làm việc rồi gõ: bmh"
+fi
