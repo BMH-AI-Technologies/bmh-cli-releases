@@ -46,7 +46,15 @@ echo "✓ Đã cài bmh vào $BIN_DIR"
 NOW=""
 for d in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin" "$HOME/bin"; do
   case ":$PATH:" in
-    *":$d:"*) if [ -d "$d" ] && [ -w "$d" ] && ln -sf "$BIN_DIR/bmh" "$d/bmh" 2>/dev/null; then NOW="$d"; break; fi ;;
+    *":$d:"*)
+      # Only create the link, or replace one that already points at a bmh install;
+      # never overwrite some other program that happens to be called bmh.
+      if [ -d "$d" ] && [ -w "$d" ]; then
+        if [ ! -e "$d/bmh" ] && [ ! -L "$d/bmh" ]; then ok=1
+        elif [ -L "$d/bmh" ] && case "$(readlink "$d/bmh")" in */.bmh/bin/bmh) true ;; *) false ;; esac; then ok=1
+        else ok=0; fi
+        if [ "$ok" = 1 ] && ln -sf "$BIN_DIR/bmh" "$d/bmh" 2>/dev/null; then NOW="$d"; break; fi
+      fi ;;
   esac
 done
 # The pipe from curl occupies stdin; setup's questions need the keyboard. Hand bmh the
