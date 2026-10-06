@@ -49,10 +49,15 @@ for d in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin" "$HOME/bin"; do
     *":$d:"*) if [ -d "$d" ] && [ -w "$d" ] && ln -sf "$BIN_DIR/bmh" "$d/bmh" 2>/dev/null; then NOW="$d"; break; fi ;;
   esac
 done
-# The pipe from curl occupies stdin; setup's questions need the keyboard.
-if (exec </dev/tty) 2>/dev/null; then
-  # BMH_INVITE (optional) registers the laptop with the BMH server.
-  "$BIN_DIR/bmh" setup ${BMH_ORG:+--org "$BMH_ORG"} ${BMH_INVITE:+--invite "$BMH_INVITE"} </dev/tty
+# The pipe from curl occupies stdin; setup's questions need the keyboard. Hand bmh the
+# window's own terminal (stderr/stdout are still connected to it). Re-opening /dev/tty
+# looks equivalent but bmh's runtime then never receives keystrokes, not even Ctrl+C.
+# BMH_INVITE (optional) registers the laptop with the BMH server.
+SETUP="$BIN_DIR/bmh setup ${BMH_ORG:+--org $BMH_ORG} ${BMH_INVITE:+--invite $BMH_INVITE}"
+if [ -t 2 ]; then
+  $SETUP <&2
+elif [ -t 1 ]; then
+  $SETUP <&1
 else
   echo "Chạy tiếp: bmh setup${BMH_ORG:+ --org $BMH_ORG}"
 fi
